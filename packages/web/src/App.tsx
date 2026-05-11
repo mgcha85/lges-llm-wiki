@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react"
-import { open } from "@/lib/web-shims/tauri-dialog"
 import i18n from "@/i18n"
 import { useWikiStore } from "@/stores/wiki-store"
 import { useReviewStore } from "@/stores/review-store"
@@ -12,6 +11,7 @@ import { startClipWatcher } from "@/lib/clip-watcher"
 import { AppLayout } from "@/components/layout/app-layout"
 import { WelcomeScreen } from "@/components/project/welcome-screen"
 import { CreateProjectDialog } from "@/components/project/create-project-dialog"
+import { OpenProjectDialog } from "@/components/project/open-project-dialog"
 import type { WikiProject } from "@/types/wiki"
 
 function App() {
@@ -21,6 +21,7 @@ function App() {
   const setSelectedFile = useWikiStore((s) => s.setSelectedFile)
   const setActiveView = useWikiStore((s) => s.setActiveView)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [showOpenDialog, setShowOpenDialog] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // Set up auto-save and clip watcher once on mount
@@ -333,15 +334,13 @@ function App() {
   }
 
   async function handleOpenProject() {
-    const selected = await open({
-      directory: true,
-      multiple: false,
-      title: "Open Wiki Project",
-    })
-    if (!selected || Array.isArray(selected)) return
+    setShowOpenDialog(true)
+  }
+
+  async function handleSelectFromDataDir(proj: WikiProject) {
     try {
-      const proj = await openProject(selected)
-      await handleProjectOpened(proj)
+      const validated = await openProject(proj.name)
+      await handleProjectOpened(validated)
     } catch (err) {
       window.alert(`Failed to open project: ${err}`)
     }
@@ -377,6 +376,11 @@ function App() {
           open={showCreateDialog}
           onOpenChange={setShowCreateDialog}
           onCreated={handleProjectOpened}
+        />
+        <OpenProjectDialog
+          open={showOpenDialog}
+          onOpenChange={setShowOpenDialog}
+          onSelectProject={handleSelectFromDataDir}
         />
       </>
     )

@@ -70,8 +70,19 @@ export async function createProject(name: string): Promise<WikiProject> {
   return { id, name: project.name, path: project.path }
 }
 
-export async function openProject(path: string): Promise<WikiProject> {
-  const project = await api.openProject(path)
+function toProjectName(pathOrName: string): string {
+  const trimmed = pathOrName.trim().replace(/[\\/]+$/, "")
+  const parts = trimmed.split(/[\\/]/)
+  return parts[parts.length - 1] ?? trimmed
+}
+
+export async function listProjects(): Promise<WikiProject[]> {
+  const projects = await api.listProjects()
+  return projects.map((p) => ({ id: p.id, name: p.name, path: p.path }))
+}
+
+export async function openProject(pathOrName: string): Promise<WikiProject> {
+  const project = await api.openProject(toProjectName(pathOrName))
   const id = await ensureProjectId(project.path)
   await upsertProjectInfo(id, project.path, project.name)
   return { id, name: project.name, path: project.path }
